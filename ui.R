@@ -27,8 +27,10 @@ dashboardPagePlus(
         h2("Dashboard tab content")
         ),
       tabItem(
-        tabName = "widgets",
-        box(title = "Performance", highchartOutput("perf_plot"))
+        tabName = "modelo",
+        box(title = "Backtest", highchartOutput("chart_backtest")),
+        box(title = "Performance", highchartOutput("chart_perf")),
+        box(title = "PSI", highchartOutput("chart_psi"))
         )
       )
     )
