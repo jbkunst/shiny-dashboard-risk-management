@@ -6,3 +6,10 @@ body {
   font-family: 'Overpass', sans-serif;
   text-rendering: optimizelegibility;
 }
+
+.bg-green { background-color: #53A155!important; }
+.bg-red   { background-color: #F13E48!important; }
+.bg-blue  { background-color: #1C6AC7!important; }
+.bg-yellow{ background-color: #FFE933!important; }
+.bg-black { background-color: #666666!important; }
+
