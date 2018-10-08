@@ -7,6 +7,18 @@ body {
   text-rendering: optimizelegibility;
 }
 
+.skin-black .main-sidebar {
+  background-color: #666666!important;
+}
+
+.nav-tabs-custom>.nav-tabs>li.active {
+    border-top-color: #666666;
+}
+
+.wrapper {
+    background-color: #ECF0F5;
+}
+
 .bg-green { background-color: #53A155!important; }
 .bg-red   { background-color: #F13E48!important; }
 .bg-blue  { background-color: #1C6AC7!important; }

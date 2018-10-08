@@ -7,6 +7,7 @@ library(highcharter)
 library(lubridate)
 library(ROCR)
 library(scales)
+library(rlang)
 # http://130.60.24.205/shinydashboardPlus/
 
 # variables ---------------------------------------------------------------
@@ -43,6 +44,9 @@ options(
 # data(credit, package = "riskr")
 # saveRDS(credit, "data/credit.rds")
 credit <- tbl_df(readRDS("data/credit.rds"))
+credit <- credit %>% 
+  mutate_at(vars(age, months_in_residence, months_in_the_job), ggplot2::cut_number, n = 4)
+
 
 # clcredit <- tbl_df(readRDS("data/chileancredit.rds"))
 # clcredit <- clcredit %>% 
@@ -233,30 +237,34 @@ hc_spark <- function(d, height = 100, suffix = "", prefix = "", type = "line", .
 # get data ----------------------------------------------------------------
 data <- get_data()
 
+
+mod_dev_dist_list <- list()
+
 mod1 <- glm(
-  data = credit %>% filter(age <= 30) %>% head(1000),
-  bad ~ age + marital_status + months_in_the_job + flag_res_phone,
+  data = data %>% filter(sex == "F", months_in_residence == "(36,120]") %>% sample_n(1000),
+  bad ~ age + marital_status + months_in_the_job + flag_res_phone + quant_add_cards,
   family = "binomial"
 )
 
 mod_brks1 <- c(0, quantile(round(1000 * predict(mod1, type = "response")), 1:9/10), 1000)
 
-mod_dev_dist1 <- round(1000 * predict(mod1, type = "response")) %>% 
+mod_dev_dist_list[["score1"]] <- round(1000 * predict(mod1, type = "response")) %>% 
   cut(mod_brks1) %>% 
   table() %>% 
   as_data_frame() %>% 
   set_names(c("score_cut", "n_dev")) %>% 
   mutate(p_dev = n_dev/sum(n_dev))
 
+
 mod2 <- glm(
-  data = credit %>% filter(months_in_the_job >= 12 * 3) %>% head(2000),
-  bad ~ marital_status + months_in_the_job + months_in_residence + profession_code,
+  data = data %>% filter(months_in_the_job == "[0,12]") %>% sample_n(2000),
+  bad ~ marital_status + age + months_in_residence + profession_code,
   family = "binomial"
 )
 
 mod_brks2 <- c(0, quantile(round(1000 * predict(mod2, type = "response")), 1:9/10), 1000)
 
-mod_dev_dist2 <- round(1000 * predict(mod2, type = "response")) %>% 
+mod_dev_dist_list[["score2"]] <- round(1000 * predict(mod2, type = "response")) %>% 
   cut(mod_brks2) %>% 
   table() %>% 
   as_data_frame() %>% 
@@ -268,15 +276,22 @@ data <- data %>%
   mutate(
     producto = paste("Producto", sample(x = 1:4, size = nrow(.), replace = TRUE, prob = sqrt(4:1))),
     score1 = round(1000 * predict(mod1, newdata = data, type = "response")),
-    score_cut1 = cut(score1, breaks = mod_brks1),
+    score1_cut = cut(score1, breaks = mod_brks1),
     score2 = round(1000 * predict(mod2, newdata = data, type = "response")),
-    score_cut2 = cut(score2, breaks = mod_brks2),
+    score2_cut = cut(score2, breaks = mod_brks2),
     saldo = round(rnorm(nrow(.), 7e6, 1e6)),
     provision = (saldo/1000) * runif(nrow(.), .2, .4) * (score1 + score2)/2,
     venta = ifelse(runif(nrow(.)) < .25, TRUE, FALSE),
     ri = cut(score1, breaks = mod_brks1[-c(2, 4, 9, 5, 6)], include.lowest = TRUE, labels = LETTERS[1:5])
   )
 
+mods <- list(
+  score1 = mod1,
+  score2 = mod2
+)
+
 filter(data, is.na(ri)) %>% glimpse()
 count(data , ri)
 glimpse(data)
+
+rm(mod_brks1, mod_brks2, mod1, mod2)
